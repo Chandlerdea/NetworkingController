@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct URLResponseStatus: OptionSetType {
+public struct URLResponseStatus: OptionSet {
     public let rawValue: Int
     public init(rawValue: Int) {
         self.rawValue = rawValue
