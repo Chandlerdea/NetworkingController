@@ -9,12 +9,23 @@
 import Foundation
 
 open class NetworkingController: NSObject {
+    
+    open var urlProtocols: [AnyClass]? {
+        get {
+            return self.sessionConfiguration.protocolClasses
+        }
+        set {
+            self.sessionConfiguration.protocolClasses = newValue
+        }
+    }
+    
+    private let sessionConfiguration: URLSessionConfiguration
 
     private lazy var session: URLSession = {
         let queue: OperationQueue = OperationQueue()
         queue.maxConcurrentOperationCount = 5
         return URLSession(
-            configuration: URLSessionConfiguration.default,
+            configuration: self.sessionConfiguration,
             delegate: self,
             delegateQueue: queue
         )
@@ -34,12 +45,22 @@ open class NetworkingController: NSObject {
     open var errorDelegate: NetworkingControllerErrorDelegate?
     open var successDelegate: NetworkingControllerSuccessDelegate?
     
+    init(sessionConfiguration: URLSessionConfiguration) {
+        self.sessionConfiguration = sessionConfiguration
+        super.init()
+    }
+    
+    override init() {
+        self.sessionConfiguration = .default
+        super.init()
+    }
+    
     deinit {
         self.session.invalidateAndCancel()
     }
 
     // Returns the task ID
-    public func perform(request: URLRequest) -> Int {
+    @discardableResult public func perform(request: URLRequest) -> Int {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         
         let dataTask: URLSessionDataTask = self.session.dataTask(with: request)
@@ -80,8 +101,8 @@ public protocol NetworkingControllerSuccessDelegate {
 }
 
 extension NetworkingController: URLSessionDataDelegate {
-
-    public func urlSession(session: URLSession, dataTask: URLSessionDataTask, didReceiveData data: Data) {
+    
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         self.readResponseData({ (allData: inout [Int: Data]) in
             
             guard let existingData: Data = allData[dataTask.taskIdentifier] else {
@@ -94,17 +115,19 @@ extension NetworkingController: URLSessionDataDelegate {
             allData[dataTask.taskIdentifier] = newData
         })
     }
-
-    public func urlSession(session: URLSession, task: URLSessionTask, didCompleteWithError error: NSError?) {
-        
+    
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
-        
-        guard let request: URLRequest = self.requests[task.taskIdentifier] else { return }
-        
+        guard let request: URLRequest = self.requests[task.taskIdentifier] else {
+            assertionFailure("request must not be nil")
+            return
+        }
         self.readResponseData({ (allData: inout [Int: Data]) in
             guard let existingData: Data        = allData[task.taskIdentifier],
-                let response:       URLResponse = task.response else { return }
-            
+                let response:       URLResponse = task.response else {
+                    assertionFailure("reponse and data for request must not be nil")
+                    return
+            }
             do {
                 self.currentRequest = request
                 if let validation: APIURLResponseValidationType = self as? APIURLResponseValidationType {
@@ -138,16 +161,16 @@ extension NetworkingController: URLSessionDataDelegate {
 }
 
 extension NetworkingController: URLSessionDelegate {
+    
 
-    public func urlSession(session: URLSession, didBecomeInvalidWithError error: NSError?) {
-        DispatchQueue.main.async {
-            self.errorDelegate?.sessionDidFail(error)
-        }
+    public func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
+  
+    }
+    
+    public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        
     }
 
-//    public func URLSession(session: NSURLSession, didReceiveChallenge challenge: NSURLAuthenticationChallenge, completionHandler: (NSURLSessionAuthChallengeDisposition, NSURLCredential?) -> Void) {
-//        
-//    }
 
 }
 
