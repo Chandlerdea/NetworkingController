@@ -31,10 +31,10 @@ open class NetworkingController: NSObject {
         )
     }()
     
-    private var currentRequest: URLRequest?
+    private var _requestForValidation: URLRequest?
     
     var requestForValidation: URLRequest? {
-        return self.currentRequest
+        return self._requestForValidation
     }
 
     private var requests: [Int: URLRequest] = [:]
@@ -129,7 +129,7 @@ extension NetworkingController: URLSessionDataDelegate {
                     return
             }
             do {
-                self.currentRequest = request
+                self._requestForValidation = request
                 if let validation: APIURLResponseValidationType = self as? APIURLResponseValidationType {
                     try validation.validateResponse(response)
                 }
