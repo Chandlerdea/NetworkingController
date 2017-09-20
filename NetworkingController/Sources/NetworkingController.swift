@@ -160,17 +160,11 @@ extension NetworkingController: URLSessionDataDelegate {
     }
 }
 
-extension NetworkingController: URLSessionDelegate {
+extension NetworkingController: URLSessionTaskDelegate {
     
-
-    public func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
-  
-    }
-    
-    public func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Swift.Void) {
         
     }
-
 
 }
 
