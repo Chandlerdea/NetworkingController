@@ -8,7 +8,7 @@ Pod::Spec.new do |spec|
   spec.source       = { :git => 'https://github.com/Chandlerdea/NetworkingController.git', :tag => "v#{spec.version}" }
   spec.license      = { :type => 'MIT', :file => 'LICENSE' }
 
-  spec.source_files = 'Sources/*.{h,m}'
+  spec.source_files = 'NetworkingController/Sources/*.{h,m,swift}'
 
   spec.frameworks = 'Foundation'
 
