@@ -33,7 +33,7 @@ In your Packages.swift file, add this code
         majorVersion: 1
     )
     
-## Use
+## How to Use
 
 Using the library is pretty simple. The `NetworkingController` is given a `URLRequest` to perform, and gives its delegates the data returned from the request. There is only one public function, `perform(request:)`, and `successDelegate` and `errorDelegate` properties. A typical use looks like this:
 
