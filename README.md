@@ -29,7 +29,7 @@ In your Packages.swift file, add this code
     import PackageDescription
 
     let package = Package(
-        url: "https://github.com/Chandlerdea/TableViewCellFormatter/TableViewCellFormatter.swift"
+        url: "https://github.com/Chandlerdea/NetworkingController/NetworkingController.swift"
         majorVersion: 1
     )
     
