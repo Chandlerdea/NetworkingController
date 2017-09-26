@@ -72,4 +72,13 @@ Using the library is pretty simple. The `NetworkingController` is given a `URLRe
     }
     
     
+### Authentication
+
+This library handles certificate pinning out of the box. All you need to do is provide the certificates, and the library will handle the authentication challenge correctly. For HTTP basic authentication, there is a function on `NetworkingControllerErrorDelegate`:
+
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)?
+    
+If you implement this method, the library will handle the authentication challenge correctly. The library stores the `URLCredential` perminently, so this will only need to be done once per app install.
+    
+    
 If you have any critiques, or ideas, open a PR or let me know!
