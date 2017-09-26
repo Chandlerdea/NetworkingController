@@ -97,9 +97,15 @@ open class NetworkingController: NSObject {
 }
 
 public protocol NetworkingControllerErrorDelegate {
-    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)?
     func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?)
     func sessionDidFail(_ error: NSError?)
+}
+
+extension NetworkingControllerErrorDelegate {
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)? {
+        return .none
+    }
 }
 
 public protocol NetworkingControllerSuccessDelegate {
@@ -201,14 +207,19 @@ extension NetworkingController: URLSessionTaskDelegate {
                 performDefaultHanding()
                 return
             }
-            var usernamePassword: (String, String) = ("","")
+            var usernamePassword: (String, String)? = .none
             DispatchQueue.main.sync {
                 usernamePassword = errorDelegate.requestDidReceiveAuthenticationChallenge(request)
             }
-            credential = URLCredential(user: usernamePassword.0, password: usernamePassword.1, persistence: .permanent)
-            useCredential()
+            if let unwrappedUsernamePassword: (String, String) = usernamePassword {
+                credential = URLCredential(user: unwrappedUsernamePassword.0, password: unwrappedUsernamePassword.1, persistence: .permanent)
+                useCredential()
+            } else {
+                cancel()
+            }
             
-        case NSURLAuthenticationMethodClientCertificate, NSURLAuthenticationMethodServerTrust:
+        case NSURLAuthenticationMethodClientCertificate,
+             NSURLAuthenticationMethodServerTrust:
             // create URLCredential with trust
             guard let trust: SecTrust = challenge.protectionSpace.serverTrust, SecTrustGetCertificateCount(trust) > 0,
                 let certificate: SecCertificate = SecTrustGetCertificateAtIndex(trust, 0) else {

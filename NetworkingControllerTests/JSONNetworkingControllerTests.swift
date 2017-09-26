@@ -62,7 +62,7 @@ extension JSONNetworkingControllerTests: NetworkingControllerSuccessDelegate {
 
 extension JSONNetworkingControllerTests: NetworkingControllerErrorDelegate {
     
-    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String) {
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)? {
         return ("test", "123")
     }
     
