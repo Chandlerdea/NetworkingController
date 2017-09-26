@@ -26,6 +26,11 @@ final class TestingProtocol: URLProtocol {
             self.client?.urlProtocolDidFinishLoading(self)
             return
         }
+        if fileUrl.pathComponents.last == "username_password_response.json" {
+            let protectionSpece: URLProtectionSpace = URLProtectionSpace(host: "", port: 433, protocol: .none, realm: .none, authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
+            let challenge: URLAuthenticationChallenge = URLAuthenticationChallenge(protectionSpace: protectionSpece, proposedCredential: .none, previousFailureCount: 0, failureResponse: .none, error: .none, sender: self as URLAuthenticationChallengeSender)
+            self.client?.urlProtocol(self, didReceive: challenge)
+        }
         let jsonData: Data = try! Data(contentsOf: fileUrl)
         let response: HTTPURLResponse = HTTPURLResponse(url: self.request.url!, statusCode: 200, httpVersion: "1.1", headerFields: .none)!
         self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -38,4 +43,21 @@ final class TestingProtocol: URLProtocol {
     }
     
 }
+
+extension TestingProtocol: URLAuthenticationChallengeSender {
+    
+    func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {
+        
+    }
+    
+    func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {
+        
+    }
+    
+    func cancel(_ challenge: URLAuthenticationChallenge) {
+        
+    }
+    
+}
+
 

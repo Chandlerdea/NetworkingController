@@ -36,6 +36,21 @@ class JSONNetworkingControllerTests: BaseTests {
         self.send(request)
     }
     
+    func testThatUsernamePasswordIsRequested() {
+        let bundle: Bundle = Bundle(for: type(of: self))
+        guard let authUrl: URL = bundle.url(forResource: "username_password_response", withExtension: "json") else {
+            XCTFail("file url must not be nil")
+            return
+        }
+        let request: URLRequest = URLRequest(url: authUrl)
+        self.completionClosure = { (data: Data?, error: Error?, status: URLResponseStatus?) -> Void in
+            XCTAssertNotNil(data)
+            XCTAssertNil(error)
+            self.currrentExpectation.fulfill()
+        }
+        self.send(request)
+    }
+    
 }
 
 extension JSONNetworkingControllerTests: NetworkingControllerSuccessDelegate {
@@ -46,6 +61,10 @@ extension JSONNetworkingControllerTests: NetworkingControllerSuccessDelegate {
 }
 
 extension JSONNetworkingControllerTests: NetworkingControllerErrorDelegate {
+    
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String) {
+        return ("test", "123")
+    }
     
     func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?) {
         self.completionClosure(.none, error, status)

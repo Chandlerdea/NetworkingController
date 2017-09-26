@@ -71,6 +71,10 @@ extension NetworkingControllerTests: NetworkingControllerSuccessDelegate {
 
 extension NetworkingControllerTests: NetworkingControllerErrorDelegate {
     
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String) {
+        return ("","")
+    }
+    
     func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?) {
         self.completionClosure(.none, error, status)
     }
