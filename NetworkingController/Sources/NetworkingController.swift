@@ -42,13 +42,15 @@ open class NetworkingController: NSObject {
 
     private let responseDataAccessQueue: DispatchQueue = DispatchQueue(label: "com.spinlister.networkingcontroller")
     
-    private lazy var certificates: [Data] = {
-        let urls: [URL] = Bundle.main.urls(forResourcesWithExtension: "cer", subdirectory: .none) ?? []
-        return urls.flatMap({ try? Data(contentsOf: $0) })
-    }()
+    private let serverTrustDelegate: ServerTrustDelegate = ServerTrustDelegate()
+    private let basicAuthDelegate: HTTPBasicAuthDelegate = HTTPBasicAuthDelegate()
 
-    open var errorDelegate: NetworkingControllerErrorDelegate?
     open var successDelegate: NetworkingControllerSuccessDelegate?
+    open var errorDelegate: NetworkingControllerErrorDelegate? {
+        didSet {
+            self.basicAuthDelegate.errorDelegate = self.errorDelegate
+        }
+    }
     
     init(sessionConfiguration: URLSessionConfiguration) {
         self.sessionConfiguration = sessionConfiguration
@@ -174,68 +176,32 @@ extension NetworkingController: URLSessionDataDelegate {
 
 extension NetworkingController: URLSessionTaskDelegate {
     
-    public func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Swift.Void) {
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         
-        func cancel() {
-            challenge.sender?.cancel(challenge)
-            completionHandler(.cancelAuthenticationChallenge, .none)
-        }
-        
-        guard let request: URLRequest = task.originalRequest, challenge.previousFailureCount == 0 else {
-            cancel()
+        guard challenge.previousFailureCount == 0 else {
+            self.cancel(challenge, completionHandler: completionHandler)
             return
         }
         
-        func performDefaultHanding() {
-            challenge.sender?.performDefaultHandling?(for: challenge)
-            completionHandler(.performDefaultHandling, .none)
-        }
-        
         let authenticationMethod: String = challenge.protectionSpace.authenticationMethod
-        let credential: URLCredential
-        
-        func useCredential() {
-            challenge.sender?.use(credential, for: challenge)
-            completionHandler(.useCredential, credential)
-        }
         
         switch authenticationMethod {
         case NSURLAuthenticationMethodHTTPBasic,
              NSURLAuthenticationMethodHTTPDigest:
             // create URLCredential with username/password, ask user for it
-            guard let errorDelegate: NetworkingControllerErrorDelegate = self.errorDelegate else {
-                performDefaultHanding()
-                return
-            }
-            var usernamePassword: (String, String)? = .none
-            DispatchQueue.main.sync {
-                usernamePassword = errorDelegate.requestDidReceiveAuthenticationChallenge(request)
-            }
-            if let unwrappedUsernamePassword: (String, String) = usernamePassword {
-                credential = URLCredential(user: unwrappedUsernamePassword.0, password: unwrappedUsernamePassword.1, persistence: .permanent)
-                useCredential()
-            } else {
-                cancel()
-            }
+            self.basicAuthDelegate.urlSession(session, task: task, didReceive: challenge, completionHandler: completionHandler)
             
-        case NSURLAuthenticationMethodClientCertificate,
-             NSURLAuthenticationMethodServerTrust:
-            // create URLCredential with trust
-            guard let trust: SecTrust = challenge.protectionSpace.serverTrust, SecTrustGetCertificateCount(trust) > 0,
-                let certificate: SecCertificate = SecTrustGetCertificateAtIndex(trust, 0) else {
-                cancel()
-                return
-            }
-            let data: Data = SecCertificateCopyData(certificate) as Data
-            if self.certificates.contains(data) {
-                credential = URLCredential(trust: trust)
-                useCredential()
-            } else {
-                cancel()
-            }
+        case NSURLAuthenticationMethodClientCertificate:
+            // client provides cert for server to verify
+            // but the client should also verify the cert from the server, if the server sends it
+            fallthrough
+            
+        case NSURLAuthenticationMethodServerTrust:
+            // server provides cert for client to verify
+            self.serverTrustDelegate.urlSession(session, task: task, didReceive: challenge, completionHandler: completionHandler)
             
         default:
-            performDefaultHanding()
+            self.performDefaultHandling(challenge, completionHandler: completionHandler)
         }
     }
 
