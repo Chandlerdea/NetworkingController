@@ -15,6 +15,11 @@ extension URLSessionTaskDelegate {
         completionHandler(.cancelAuthenticationChallenge, .none)
     }
     
+    func continueWithoutCredential(_ challenge: URLAuthenticationChallenge, completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        challenge.sender?.continueWithoutCredential(for: challenge)
+        completionHandler(.useCredential, .none)
+    }
+    
     func performDefaultHandling(_ challenge: URLAuthenticationChallenge, completionHandler: (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         challenge.sender?.performDefaultHandling?(for: challenge)
         completionHandler(.performDefaultHandling, .none)

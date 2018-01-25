@@ -139,8 +139,7 @@ extension NetworkingController: URLSessionDataDelegate {
         self.readResponseData({ (allData: inout [Int: Data]) in
             guard let existingData: Data        = allData[task.taskIdentifier],
                 let response:       URLResponse = task.response else {
-                    assertionFailure("reponse and data for request must not be nil")
-                    return
+                return
             }
             do {
                 self._requestForValidation = request

@@ -11,6 +11,9 @@ import Foundation
 
 final class TestingProtocol: URLProtocol {
     
+    static let correctUsername: String = "test"
+    static let correctPassword: String = "123"
+    
     override class func canInit(with request: URLRequest) -> Bool {
         return true
     }
@@ -19,23 +22,49 @@ final class TestingProtocol: URLProtocol {
         return request
     }
     
-    override func startLoading() {
-        guard let fileUrl: URL = self.request.url, FileManager.default.fileExists(atPath: fileUrl.path) else {
-            let response: URLResponse = HTTPURLResponse(url: self.request.url!, statusCode: URLResponseStatus.BadRequest.rawValue, httpVersion: "1.1", headerFields: .none)!
-            self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            self.client?.urlProtocolDidFinishLoading(self)
-            return
+    private func sendBadURLResponse() {
+        let response: URLResponse = HTTPURLResponse(url: self.request.url!, statusCode: URLResponseStatus.BadRequest.rawValue, httpVersion: "1.1", headerFields: .none)!
+        self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        self.client?.urlProtocolDidFinishLoading(self)
+    }
+    
+    private func sendUnauthorizedResponse() {
+        let response: URLResponse = HTTPURLResponse(url: self.request.url!, statusCode: URLResponseStatus.Unauthorized.rawValue, httpVersion: "1.1", headerFields: .none)!
+        self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        self.client?.urlProtocolDidFinishLoading(self)
+    }
+    
+    private func sendOkResponse(for url: URL) {
+        let jsonData: Data
+        switch url.pathComponents.last {
+        case "default_response.json"?,
+             "username_password_response.json"?:
+            jsonData = try! Data(contentsOf: url)
+        default:
+            jsonData = Data()
         }
-        if fileUrl.pathComponents.last == "username_password_response.json" {
-            let protectionSpece: URLProtectionSpace = URLProtectionSpace(host: "", port: 433, protocol: .none, realm: .none, authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
-            let challenge: URLAuthenticationChallenge = URLAuthenticationChallenge(protectionSpace: protectionSpece, proposedCredential: .none, previousFailureCount: 0, failureResponse: .none, error: .none, sender: self as URLAuthenticationChallengeSender)
-            self.client?.urlProtocol(self, didReceive: challenge)
-        }
-        let jsonData: Data = try! Data(contentsOf: fileUrl)
-        let response: HTTPURLResponse = HTTPURLResponse(url: self.request.url!, statusCode: 200, httpVersion: "1.1", headerFields: .none)!
+        let response: HTTPURLResponse = HTTPURLResponse(url: self.request.url!, statusCode: URLResponseStatus.OK.rawValue, httpVersion: "1.1", headerFields: .none)!
         self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         self.client?.urlProtocol(self, didLoad: jsonData)
         self.client?.urlProtocolDidFinishLoading(self)
+    }
+    
+    override func startLoading() {
+        guard let url: URL = self.request.url else {
+            self.sendBadURLResponse()
+            return
+        }
+        switch url.pathComponents.last {
+        case "wrong_url"?:
+            self.sendBadURLResponse()
+        case "username_password_response.json"? where FileManager.default.fileExists(atPath: url.path),
+             "testThatRequestIsUnauthorizedWithoutCredentials"?:
+            let protectionSpece: URLProtectionSpace = URLProtectionSpace(host: "", port: 443, protocol: .none, realm: .none, authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
+            let challenge: URLAuthenticationChallenge = URLAuthenticationChallenge(protectionSpace: protectionSpece, proposedCredential: .none, previousFailureCount: 0, failureResponse: .none, error: .none, sender: self as URLAuthenticationChallengeSender)
+            self.client?.urlProtocol(self, didReceive: challenge)
+        default:
+            self.sendOkResponse(for: url)
+        }
     }
     
     override func stopLoading() {
@@ -47,7 +76,16 @@ final class TestingProtocol: URLProtocol {
 extension TestingProtocol: URLAuthenticationChallengeSender {
     
     func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {
-        
+        let isUsernamePasswordCorrect: Bool = credential.user == TestingProtocol.correctUsername && credential.password == TestingProtocol.correctPassword
+        guard let fileUrl: URL = self.request.url, FileManager.default.fileExists(atPath: fileUrl.path), isUsernamePasswordCorrect else {
+            self.sendUnauthorizedResponse()
+            return
+        }
+        self.sendOkResponse(for: fileUrl)
+    }
+    
+    func performDefaultHandling(for challenge: URLAuthenticationChallenge) {
+        self.sendUnauthorizedResponse()
     }
     
     func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {
