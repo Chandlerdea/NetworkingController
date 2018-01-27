@@ -8,6 +8,26 @@
 
 import Foundation
 
+public protocol NetworkingControllerAuthenticationDelegate: class {
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)?
+    func shouldProceedWithAuthenticationChallendWithoutCredentials(_ request: URLRequest) -> Bool
+}
+
+public protocol NetworkingControllerErrorDelegate: class {
+    func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?)
+    func sessionDidFail(_ error: NSError?)
+}
+
+extension NetworkingControllerErrorDelegate {
+    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)? {
+        return .none
+    }
+}
+
+public protocol NetworkingControllerSuccessDelegate: class {
+    func requestDidComplete(_ request: URLRequest, data: Data)
+}
+
 open class NetworkingController: NSObject {
     
     open var urlProtocols: [AnyClass]? {
@@ -45,10 +65,12 @@ open class NetworkingController: NSObject {
     private let serverTrustDelegate: ServerTrustDelegate = ServerTrustDelegate()
     private let basicAuthDelegate: HTTPBasicAuthDelegate = HTTPBasicAuthDelegate()
 
-    open var successDelegate: NetworkingControllerSuccessDelegate?
-    open var errorDelegate: NetworkingControllerErrorDelegate? {
+    open weak var successDelegate: NetworkingControllerSuccessDelegate?
+    open weak var errorDelegate: NetworkingControllerErrorDelegate?
+    open weak var authenticationDelegate: NetworkingControllerAuthenticationDelegate? {
         didSet {
-            self.basicAuthDelegate.errorDelegate = self.errorDelegate
+            self.basicAuthDelegate.authDelegate = self.authenticationDelegate
+            self.serverTrustDelegate.authDelegate = self.authenticationDelegate
         }
     }
     
@@ -98,22 +120,6 @@ open class NetworkingController: NSObject {
 
 }
 
-public protocol NetworkingControllerErrorDelegate {
-    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)?
-    func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?)
-    func sessionDidFail(_ error: NSError?)
-}
-
-extension NetworkingControllerErrorDelegate {
-    func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)? {
-        return .none
-    }
-}
-
-public protocol NetworkingControllerSuccessDelegate {
-    func requestDidComplete(_ request: URLRequest, data: Data)
-}
-
 extension NetworkingController: URLSessionDataDelegate {
     
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
@@ -131,7 +137,9 @@ extension NetworkingController: URLSessionDataDelegate {
     }
     
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+        DispatchQueue.main.async {
+            UIApplication.shared.isNetworkActivityIndicatorVisible = false
+        }
         guard let request: URLRequest = self.requests[task.taskIdentifier] else {
             assertionFailure("request must not be nil")
             return

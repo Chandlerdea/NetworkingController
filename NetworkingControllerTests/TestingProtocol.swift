@@ -58,7 +58,7 @@ final class TestingProtocol: URLProtocol {
         case "wrong_url"?:
             self.sendBadURLResponse()
         case "username_password_response.json"? where FileManager.default.fileExists(atPath: url.path),
-             "testThatRequestIsUnauthorizedWithoutCredentials"?:
+             "chanllenge_no_credentials_needed"? where FileManager.default.fileExists(atPath: url.path):
             let protectionSpece: URLProtectionSpace = URLProtectionSpace(host: "", port: 443, protocol: .none, realm: .none, authenticationMethod: NSURLAuthenticationMethodHTTPBasic)
             let challenge: URLAuthenticationChallenge = URLAuthenticationChallenge(protectionSpace: protectionSpece, proposedCredential: .none, previousFailureCount: 0, failureResponse: .none, error: .none, sender: self as URLAuthenticationChallengeSender)
             self.client?.urlProtocol(self, didReceive: challenge)
@@ -85,7 +85,7 @@ extension TestingProtocol: URLAuthenticationChallengeSender {
     }
     
     func performDefaultHandling(for challenge: URLAuthenticationChallenge) {
-        self.sendUnauthorizedResponse()
+        self.sendOkResponse(for: self.request.url!)
     }
     
     func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {

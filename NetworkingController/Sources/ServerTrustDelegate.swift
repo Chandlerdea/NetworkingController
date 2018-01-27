@@ -11,12 +11,22 @@ import Foundation
 
 final class ServerTrustDelegate: NSObject, URLSessionTaskDelegate {
     
+    var authDelegate: NetworkingControllerAuthenticationDelegate?
+    
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         let protectionSpace: URLProtectionSpace = challenge.protectionSpace
         let authenticationMethod: String = protectionSpace.authenticationMethod
         if authenticationMethod == NSURLAuthenticationMethodServerTrust {
+            var shouldProceedWithoutCredentials: Bool = false
+            if let request: URLRequest = task.originalRequest, let authDelegate: NetworkingControllerAuthenticationDelegate = self.authDelegate {
+                DispatchQueue.main.sync {
+                    shouldProceedWithoutCredentials = authDelegate.shouldProceedWithAuthenticationChallendWithoutCredentials(request)
+                }
+            }
             if let credential: URLCredential = self.credentialForServerTrust(in: protectionSpace) {
                 self.useCredential(credential, challenge: challenge, completionHandler: completionHandler)
+            } else if shouldProceedWithoutCredentials == true {
+                self.performDefaultHandling(challenge, completionHandler: completionHandler)
             } else {
                 self.cancel(challenge, completionHandler: completionHandler)
             }

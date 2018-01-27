@@ -13,18 +13,21 @@ class JSONNetworkingControllerTests: BaseTests {
     
     var enteredUsername: String?
     var enteredPassword: String?
+    var canProceedWithoutAuthentication: Bool = false
     
     override func setUp() {
         super.setUp()
         self.controller = JSONNetworkingController(sessionConfiguration: .ephemeral)
         self.controller.successDelegate = self
         self.controller.errorDelegate = self
+        self.controller.authenticationDelegate = self
         self.controller.urlProtocols = [TestingProtocol.self]
     }
     
     override func tearDown() {
         self.enteredUsername = .none
         self.enteredPassword = .none
+        self.canProceedWithoutAuthentication = false
         super.tearDown()
     }
     
@@ -71,7 +74,6 @@ class JSONNetworkingControllerTests: BaseTests {
         self.send(request)
     }
     
-
     func testThatResponseIsUnauthorizedWhenIncorrectUsernamePasswordIsProvided() {
         let bundle: Bundle = Bundle(for: type(of: self))
         guard let authUrl: URL = bundle.url(forResource: "username_password_response", withExtension: "json") else {
@@ -89,6 +91,22 @@ class JSONNetworkingControllerTests: BaseTests {
         }
         self.send(request)
     }
+    
+    func testThatResponseIsOKWhenAuthenticationIsNotRequired() {
+        let bundle: Bundle = Bundle(for: type(of: self))
+        guard let authUrl: URL = bundle.url(forResource: "challenge_no_credentials_needed_response", withExtension: "json") else {
+            XCTFail("file url must not be nil")
+            return
+        }
+        let request: URLRequest = URLRequest(url: authUrl)
+        self.completionClosure = { (data: Data?, error: Error?, status: URLResponseStatus?) -> Void in
+            XCTAssertNotNil(data)
+            XCTAssertNil(error)
+            XCTAssertEqual(status, .OK)
+            self.currrentExpectation.fulfill()
+        }
+        self.send(request)
+    }
 }
 
 extension JSONNetworkingControllerTests: NetworkingControllerSuccessDelegate {
@@ -98,7 +116,7 @@ extension JSONNetworkingControllerTests: NetworkingControllerSuccessDelegate {
     }
 }
 
-extension JSONNetworkingControllerTests: NetworkingControllerErrorDelegate {
+extension JSONNetworkingControllerTests: NetworkingControllerAuthenticationDelegate {
     
     func requestDidReceiveAuthenticationChallenge(_ request: URLRequest) -> (username: String, password: String)? {
         guard let username: String = self.enteredUsername, let password: String = self.enteredPassword, request.url?.pathComponents.last == "username_password_response.json" else {
@@ -106,6 +124,13 @@ extension JSONNetworkingControllerTests: NetworkingControllerErrorDelegate {
         }
         return (username, password)
     }
+    
+    func shouldProceedWithAuthenticationChallendWithoutCredentials(_ request: URLRequest) -> Bool {
+        return self.canProceedWithoutAuthentication
+    }
+}
+
+extension JSONNetworkingControllerTests: NetworkingControllerErrorDelegate {
     
     func requestDidFail(_ request: URLRequest, error: NSError, status: URLResponseStatus?) {
         self.completionClosure(.none, error, status)
