@@ -11,7 +11,7 @@ import Foundation
 
 final class ServerTrustDelegate: NSObject, URLSessionTaskDelegate {
     
-    var authDelegate: NetworkingControllerAuthenticationDelegate?
+    weak var authDelegate: NetworkingControllerAuthenticationDelegate?
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         let protectionSpace: URLProtectionSpace = challenge.protectionSpace

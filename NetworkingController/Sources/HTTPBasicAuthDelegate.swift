@@ -10,7 +10,7 @@ import Foundation
 
 final class HTTPBasicAuthDelegate: NSObject, URLSessionTaskDelegate {
     
-    var authDelegate: NetworkingControllerAuthenticationDelegate?
+    weak var authDelegate: NetworkingControllerAuthenticationDelegate?
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         guard let request: URLRequest = task.originalRequest, let authDelegate: NetworkingControllerAuthenticationDelegate = self.authDelegate else {
