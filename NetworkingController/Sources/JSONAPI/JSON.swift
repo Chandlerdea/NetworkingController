@@ -8,16 +8,19 @@
 
 import Foundation
 
-typealias JSON = Any
-typealias JSONDictionary = [String: JSON]
-typealias JSONArray = [JSON]
+public typealias JSON = Any
+public typealias JSONObject = [String: JSON]
+public typealias JSONArray = [JSON]
 
-func JSONString(_ object: JSON) -> String? {
-    guard let string: String = object as? String, string.characters.count > 0 else { return .none }
-    return string
+func toJSONString(_ object: JSON) -> String? {
+    if let string: String = object as? String, string.count > 0 {
+        return string
+    } else {
+        return .none
+    }
 }
 
-func JSONBoolString(_ object: JSON) -> Bool? {
+func toJSONBoolString(_ object: JSON) -> Bool? {
     if let number = object as? NSNumber {
         return number.boolValue
     } else {
@@ -25,7 +28,7 @@ func JSONBoolString(_ object: JSON) -> Bool? {
     }
 }
 
-func JSONInt(_ object: JSON) -> Int? {
+func toJSONInt(_ object: JSON) -> Int? {
     if let string = object as? String {
         let formatter = NumberFormatter()
         return formatter.number(from: string)?.intValue
@@ -34,11 +37,11 @@ func JSONInt(_ object: JSON) -> Int? {
     }
 }
 
-func JSONDouble(_ object: JSON) -> Double? {
+func toJSONDouble(_ object: JSON) -> Double? {
     return object as? Double
 }
 
-func JSONDecimal(_ object: JSON) -> Decimal? {
+func toJSONDecimal(_ object: JSON) -> Decimal? {
     if let string = object as? String {
         let formatter = NumberFormatter()
         return formatter.number(from: string).flatMap({ Decimal($0.doubleValue) })
@@ -47,16 +50,16 @@ func JSONDecimal(_ object: JSON) -> Decimal? {
     }
 }
 
-func JSONArrayObject(_ object: JSON) -> JSONArray? {
+func toJSONArrayObject(_ object: JSON) -> JSONArray? {
     return object as? JSONArray
 }
 
-func JSONObject(_ object: JSON) -> JSONDictionary? {
-    return object as? JSONDictionary
+func toJSONObject(_ object: JSON) -> JSONObject? {
+    return object as? JSONObject
 }
 
-func JSONObjectArray(_ object: JSON) -> [JSONDictionary]? {
-    return object as? [JSONDictionary]
+func toJSONObjectArray(_ object: JSON) -> [JSONObject]? {
+    return object as? [JSONObject]
 }
 
 

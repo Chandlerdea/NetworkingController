@@ -10,11 +10,4 @@ import Foundation
 
 public final class JSONNetworkingController: NetworkingController, APIURLResponseJSONType {
     
-    public convenience override init() {
-        self.init(sessionConfiguration: .default)
-    }
-    
-    public override init(sessionConfiguration: URLSessionConfiguration) {
-        super.init(sessionConfiguration: sessionConfiguration)
-    }
 }
