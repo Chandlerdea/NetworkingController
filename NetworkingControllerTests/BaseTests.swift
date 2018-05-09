@@ -11,7 +11,7 @@ import XCTest
 
 class BaseTests: XCTestCase {
     
-    var completionClosure: ((Data?, Error?, URLResponseStatus?) -> ())!
+    var completionClosure: ((URLSessionTask, Data?, Error?, URLResponseStatus?) -> ())!
     var currrentExpectation: XCTestExpectation!
     var controller: NetworkingController!
     
@@ -23,10 +23,10 @@ class BaseTests: XCTestCase {
         super.tearDown()
     }
     
-    func send(_ request: URLRequest) {
+    func send(_ request: URLRequest, delegate: NetworkingControllerDelegate, timeout: TimeInterval = 2) {
         self.currrentExpectation = self.defaultExpectation()
-        self.controller.perform(request: request)
-        self.defaultWait()
+        self.controller.send(request, delegate: delegate)
+        self.defaultWait(timeout: timeout)
     }
     
 }

@@ -38,7 +38,8 @@ final class TestingProtocol: URLProtocol {
         let jsonData: Data
         switch url.pathComponents.last {
         case "default_response.json"?,
-             "username_password_response.json"?:
+             "username_password_response.json"?,
+             "jsonapi_response.json"?:
             jsonData = try! Data(contentsOf: url)
         default:
             jsonData = Data()
